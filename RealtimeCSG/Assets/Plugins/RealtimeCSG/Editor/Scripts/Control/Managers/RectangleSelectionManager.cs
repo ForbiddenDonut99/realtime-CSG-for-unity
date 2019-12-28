@@ -7,118 +7,206 @@ using UnityEngine.SceneManagement;
 using UnityEditor;
 using InternalRealtimeCSG;
 using RealtimeCSG.Components;
+using Object = UnityEngine.Object;
 
 namespace RealtimeCSG
 {
-	internal sealed class RectangleSelectionManager
+	internal static class RectSelection 
 	{
-		static Type			UnitySceneViewType;
-		static Type			UnityRectSelectionType;
-		static Type			UnityEnumSelectionType;
-
-		static object		SelectionType_Additive;
-		static object		SelectionType_Subtractive;
-		static object		SelectionType_Normal;
-			
-		static FieldInfo	m_RectSelection_field;
-		static FieldInfo	m_RectSelecting_field;
-		static FieldInfo	s_RectSelectionID_field;
-		static FieldInfo	m_SelectStartPoint_field;
-		static FieldInfo	m_SelectMousePoint_field;
-		static FieldInfo	m_SelectionStart_field;
-		static FieldInfo	m_LastSelection_field;
-		static FieldInfo	m_CurrentSelection_field;
-		static MethodInfo	UpdateSelection_method;
-
-		static bool         initialized			= false;
-		static bool			reflectionSucceeded = false;
-
-		static void InitReflectedData()
+		public static bool	Valid			{ get { return reflectionSucceeded; } }
+		public static int	RectSelectionID { get; private set; }
+		public static SceneView SceneView
 		{
-			if (initialized)
+			get
+			{
+				return sceneView;
+			}
+			set
+			{
+				if (sceneView == value)
+					return;
+				sceneView = value;
+				rectSelection = rectSelectionField.GetValue(sceneView);
+			}
+		}
+		public static bool		RectSelecting		{ get { return (bool)rectSelectingField.GetValue(rectSelection); } }
+        public static Vector2	SelectStartPoint	{ get { return (Vector2)selectStartPointField.GetValue(rectSelection); } }
+        public static Vector2	SelectMousePoint	{ get { return (Vector2)selectMousePointField.GetValue(rectSelection); } }
+		public static UnityEngine.Object[]			SelectionStart		{ get { return (UnityEngine.Object[])selectionStartField.GetValue(rectSelection); } set { selectionStartField.SetValue(rectSelection, value); } }
+        public static UnityEngine.Object[]			CurrentSelection	{ get { return (UnityEngine.Object[])currentSelectionField.GetValue(rectSelection); } set { currentSelectionField.SetValue(rectSelection, value); } }
+        public static Dictionary<GameObject, bool>	LastSelection		{ get { return (Dictionary<GameObject, bool>)lastSelectionField.GetValue(rectSelection); } }
+
+		static object rectSelection;
+		static object selectionTypeAdditive;
+		static object selectionTypeSubtractive;
+		static object selectionTypeNormal;
+
+		static SceneView sceneView;
+
+		static Type unityRectSelectionType;
+		static Type unityEnumSelectionType;
+
+		static FieldInfo rectSelectionField;
+		static FieldInfo rectSelectingField;
+		static FieldInfo selectStartPointField;
+		static FieldInfo selectMousePointField;
+		static FieldInfo selectionStartField;
+		static FieldInfo lastSelectionField;
+		static FieldInfo currentSelectionField;
+		static FieldInfo rectSelectionIDField;
+
+		static MethodInfo updateSelectionMethod;
+
+		static bool reflectionSucceeded = false;
+
+		static RectSelection()
+		{
+			reflectionSucceeded = false;
+
+			var assemblies	= System.AppDomain.CurrentDomain.GetAssemblies();
+			var types		= new List<System.Type>();
+			foreach (var assembly in assemblies) {
+				try {
+					types.AddRange(assembly.GetTypes());
+				} catch { }
+			}
+
+			unityRectSelectionType	= types.FirstOrDefault(t => t.FullName == "UnityEditor.RectSelection");
+			if (unityRectSelectionType == null)
 				return;
 
-			initialized			= true;
-			reflectionSucceeded	= false;
-			UnitySceneViewType	= typeof(SceneView);
-			
-			var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-			var types = new List<System.Type>();
-			foreach(var assembly in assemblies)
-			{
-				try
-				{
-					types.AddRange(assembly.GetTypes());
-				}
-				catch { }
-			}
-			UnityRectSelectionType		= types.FirstOrDefault(t => t.FullName == "UnityEditor.RectSelection");
-			UnityEnumSelectionType 		= types.FirstOrDefault(t => t.FullName == "UnityEditor.RectSelection+SelectionType");
-			
+			unityEnumSelectionType	= types.FirstOrDefault(t => t.FullName == "UnityEditor.RectSelection+SelectionType");
+			if (unityEnumSelectionType == null)
+				return;
 
-			if (UnitySceneViewType != null)
-			{
-				m_RectSelection_field		= UnitySceneViewType.GetField("m_RectSelection", BindingFlags.NonPublic | BindingFlags.Instance);
-			} else
-			{
-				m_RectSelection_field = null;
-			}
+			rectSelectionField		= typeof(SceneView).GetField("m_RectSelection", BindingFlags.NonPublic | BindingFlags.Instance);
+			if (rectSelectionField == null)
+				return;
 
-			if (UnityRectSelectionType != null) 
-			{
-				m_RectSelecting_field		= UnityRectSelectionType.GetField("m_RectSelecting",	BindingFlags.NonPublic | BindingFlags.Instance);
-				s_RectSelectionID_field		= UnityRectSelectionType.GetField("s_RectSelectionID",	BindingFlags.NonPublic | BindingFlags.Static);
-				m_SelectStartPoint_field	= UnityRectSelectionType.GetField("m_SelectStartPoint",	BindingFlags.NonPublic | BindingFlags.Instance);
-				m_SelectionStart_field		= UnityRectSelectionType.GetField("m_SelectionStart",	BindingFlags.NonPublic | BindingFlags.Instance);
-				m_LastSelection_field		= UnityRectSelectionType.GetField("m_LastSelection",	BindingFlags.NonPublic | BindingFlags.Instance);
-				m_CurrentSelection_field	= UnityRectSelectionType.GetField("m_CurrentSelection",	BindingFlags.NonPublic | BindingFlags.Instance);
-				m_SelectMousePoint_field	= UnityRectSelectionType.GetField("m_SelectMousePoint",	BindingFlags.NonPublic | BindingFlags.Instance);
-				
-				if (UnityEnumSelectionType != null)
-				{
-					SelectionType_Additive		= Enum.Parse(UnityEnumSelectionType, "Additive");
-					SelectionType_Subtractive	= Enum.Parse(UnityEnumSelectionType, "Subtractive");
-					SelectionType_Normal		= Enum.Parse(UnityEnumSelectionType, "Normal");
-			
-					UpdateSelection_method		= UnityRectSelectionType.GetMethod("UpdateSelection", BindingFlags.NonPublic | BindingFlags.Static,
-																					null,
-																					new Type[] {
-																						typeof(UnityEngine.Object[]),
-																						typeof(UnityEngine.Object[]),
-																						UnityEnumSelectionType,
-																						typeof(bool)
-																					},
-																					null);
-				}
-			}
+			rectSelectionIDField	= unityRectSelectionType.GetField("s_RectSelectionID", BindingFlags.NonPublic | BindingFlags.Static);
+			if (rectSelectionIDField == null)
+				return;
 
-			reflectionSucceeded =	s_RectSelectionID_field  != null &&
-									m_RectSelection_field    != null &&
-									m_RectSelecting_field    != null &&
-									m_SelectStartPoint_field != null &&
-									m_SelectMousePoint_field != null &&
-									UpdateSelection_method   != null;
+			RectSelectionID			= (int) rectSelectionIDField.GetValue(null);
+			rectSelectingField		= unityRectSelectionType.GetField("m_RectSelecting",	BindingFlags.NonPublic | BindingFlags.Instance);
+			selectStartPointField	= unityRectSelectionType.GetField("m_SelectStartPoint", BindingFlags.NonPublic | BindingFlags.Instance);
+			selectionStartField		= unityRectSelectionType.GetField("m_SelectionStart",	BindingFlags.NonPublic | BindingFlags.Instance);
+			lastSelectionField		= unityRectSelectionType.GetField("m_LastSelection",	BindingFlags.NonPublic | BindingFlags.Instance);
+			currentSelectionField	= unityRectSelectionType.GetField("m_CurrentSelection", BindingFlags.NonPublic | BindingFlags.Instance);
+			selectMousePointField	= unityRectSelectionType.GetField("m_SelectMousePoint", BindingFlags.NonPublic | BindingFlags.Instance);
+
+			updateSelectionMethod	= unityRectSelectionType.GetMethod("UpdateSelection", BindingFlags.NonPublic | BindingFlags.Static,
+																		null,
+																		new Type[] {
+																			typeof(UnityEngine.Object[]),
+																			typeof(UnityEngine.Object[]),
+																			unityEnumSelectionType,
+																			typeof(bool)
+																			},
+																		null);
+			selectionTypeAdditive		= Enum.Parse(unityEnumSelectionType, "Additive");
+			selectionTypeSubtractive	= Enum.Parse(unityEnumSelectionType, "Subtractive");
+			selectionTypeNormal			= Enum.Parse(unityEnumSelectionType, "Normal");
+
+			reflectionSucceeded =	rectSelectionField			!= null &&
+									selectStartPointField		!= null &&
+									selectionStartField			!= null &&
+									lastSelectionField			!= null &&
+									currentSelectionField		!= null &&
+									selectMousePointField		!= null &&
+									updateSelectionMethod		!= null &&
+									
+									selectionTypeAdditive		!= null &&
+									selectionTypeSubtractive	!= null &&
+									selectionTypeNormal			!= null;
 		}
 
-		
-		static HashSet<GameObject>	rectFoundGameObjects = new HashSet<GameObject>();
-		static Vector2				prevStartGUIPoint;
-		static Vector2				prevMouseGUIPoint;
-		static Vector2				prevStartScreenPoint;
-		static Vector2				prevMouseScreenPoint;
-		
+		public static void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type)
+		{
+			object selectionType;
+            switch (type)
+            {
+                default:						selectionType = selectionTypeNormal; break;
+                case SelectionType.Additive:	selectionType = selectionTypeAdditive; break;
+                case SelectionType.Subtractive:	selectionType = selectionTypeSubtractive; break;
+            }
 
-		static bool		rectClickDown       = false;
-		static bool		mouseDragged        = false;
-		static Vector2	clickMousePosition  = MathConstants.zeroVector2;
+			updateSelectionMethod.Invoke(null,
+				new object[]
+				{
+					existingSelection,
+					newObjects,
+					selectionType,
+					RectSelecting
+				});
+		}
+	}
+
+	internal sealed class RectangleSelectionManager
+	{
+		static HashSet<CSGNode> rectFoundTreeNode		= new HashSet<CSGNode>();
+		static HashSet<GameObject> rectFoundGameObjects = new HashSet<GameObject>();
+		static Vector2 prevStartGUIPoint;
+		static Vector2 prevMouseGUIPoint;
+		static Vector2 prevStartScreenPoint;
+		static Vector2 prevMouseScreenPoint;
+		static bool rectClickDown						= false;
+		static bool mouseDragged						= false;
+		static Vector2 clickMousePosition				= Vector2.zero;
+
+		public static SelectionType GetCurrentSelectionType()
+		{
+			var selectionType = SelectionType.Replace;
+
+			// Shift only
+			if (Event.current.shift && !EditorGUI.actionKey && !Event.current.alt) 
+			{
+				selectionType = SelectionType.Additive;
+
+			// Action key only (Command on macOS, Control on Windows)
+			} else if (!Event.current.shift && EditorGUI.actionKey && !Event.current.alt) 
+			{
+				selectionType = SelectionType.Subtractive;
+			}
+			return selectionType;
+		}
+
+		static void RemoveGeneratedMeshesFromSelection() 
+		{
+			var selectedObjects = Selection.objects;
+			if (selectedObjects != null) {
+				var foundObjects = selectedObjects;
+
+				RemoveGeneratedMeshesFromArray(ref foundObjects);
+
+				if (foundObjects.Length != selectedObjects.Length)
+					Selection.objects = foundObjects;
+			}
+		}
+
+		static bool RemoveGeneratedMeshesFromArray(ref UnityEngine.Object[] selection)
+		{
+			var found = new List<UnityEngine.Object>();
+			for (int i = selection.Length - 1; i >= 0; i--) {
+				var obj = selection[i];
+				if (MeshInstanceManager.IsObjectGenerated(obj))
+					continue;
+				found.Add(obj);
+			}
+			if (selection.Length != found.Count)
+			{
+				selection = found.ToArray();
+				return true;
+			}
+			return false;
+		}
 
 		// Update rectangle selection using reflection
 		// This is hacky & dangerous 
 		// LOOK AWAY NOW!
 		internal static void Update(SceneView sceneView)
 		{
-			InitReflectedData();
-			if (!reflectionSucceeded)
+			if (!RectSelection.Valid)
 			{
 				prevStartGUIPoint = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
 				prevMouseGUIPoint = prevStartGUIPoint;
@@ -127,191 +215,124 @@ namespace RealtimeCSG
 				rectFoundGameObjects.Clear();
 				return;
 			}
+			RectSelection.SceneView = sceneView;
 
-			var s_RectSelectionID_instance = (int)s_RectSelectionID_field.GetValue(null);
+			var rectSelectionID		= RectSelection.RectSelectionID;
+			var hotControl			= GUIUtility.hotControl;
+			var areRectSelecting	= hotControl == rectSelectionID;
+			var typeForControl		= Event.current.GetTypeForControl(rectSelectionID);
 
-			// check if we're rect-selecting
-			if (GUIUtility.hotControl == s_RectSelectionID_instance)
+			// Check if we're rect-selecting
+			if (areRectSelecting)
 			{
-				var typeForControl	= Event.current.GetTypeForControl(s_RectSelectionID_instance);
-				if (typeForControl == EventType.Used ||
-					Event.current.commandName == "ModifierKeysChanged")
+				if ((typeForControl == EventType.Used || Event.current.commandName == "ModifierKeysChanged") &&
+					RectSelection.RectSelecting)
 				{
-					// m_RectSelection field of SceneView
-					var m_RectSelection_instance = m_RectSelection_field.GetValue(sceneView);
+					var selectStartPoint = RectSelection.SelectStartPoint;
+					var selectMousePoint = RectSelection.SelectMousePoint;
 
-					// m_RectSelecting field of RectSelection instance
-					var m_RectSelecting_instance = (bool)m_RectSelecting_field.GetValue(m_RectSelection_instance);
-					if (m_RectSelecting_instance)
+					// Determine if our frustrum changed since last time
+					bool modified = false;
+					bool needUpdate = false;
+					if (prevStartGUIPoint != selectStartPoint)
 					{
-						// m_SelectStartPoint of RectSelection instance
-						var m_SelectStartPoint_instance = (Vector2)m_SelectStartPoint_field.GetValue(m_RectSelection_instance);
+						prevStartGUIPoint		= selectStartPoint;
+                        prevStartScreenPoint	= Event.current.mousePosition;
+                        needUpdate				= true;
+					}
+					if (prevMouseGUIPoint != selectMousePoint)
+					{
+						prevMouseGUIPoint		= selectMousePoint;
+                        prevMouseScreenPoint	= Event.current.mousePosition;
+                        needUpdate				= true;
+					}
+					if (needUpdate)
+					{
+						var rect = CameraUtility.PointsToRect(prevStartScreenPoint, prevMouseScreenPoint);
+						if (rect.width > 3 && rect.height > 3)
+						{
+							var frustum = CameraUtility.GetCameraSubFrustumGUI(Camera.current, rect);
 
-						// m_SelectMousePoint of RectSelection instance
-						var m_SelectMousePoint_instance = (Vector2)m_SelectMousePoint_field.GetValue(m_RectSelection_instance);
-
-						// determine if our frustum changed since the last time
-						bool modified = false;
-						bool needUpdate = false;
-						if (prevStartGUIPoint != m_SelectStartPoint_instance)
-						{
-							prevStartGUIPoint = m_SelectStartPoint_instance;
-							prevStartScreenPoint = Event.current.mousePosition;
-							needUpdate = true;
-						}
-						if (prevMouseGUIPoint != m_SelectMousePoint_instance)
-						{
-							prevMouseGUIPoint = m_SelectMousePoint_instance;
-							prevMouseScreenPoint = Event.current.mousePosition;
-							needUpdate = true;
-						}
-						if (needUpdate)
-						{
-							var rect	= CameraUtility.PointsToRect(prevStartScreenPoint, prevMouseScreenPoint);
-							if (rect.width > 3 && rect.height > 3)
-							{ 
-								var frustum = CameraUtility.GetCameraSubFrustumGUI(Camera.current, rect);
-								
-								// Find all the brushes (and it's gameObjects) that are in the frustum
-								if (SceneQueryUtility.GetItemsInFrustum(frustum.Planes, 
-																	  rectFoundGameObjects))
-								{ 
-									modified = true;
-								} else
-								{
-									if (rectFoundGameObjects != null &&
-										rectFoundGameObjects.Count > 0)
-									{
-										rectFoundGameObjects.Clear();
-										modified = true;
-									}
-								}
-							}
-						}
-
-						GameObject[] currentSelection = null;
-						var m_LastSelection_instance	= (Dictionary<GameObject, bool>)m_LastSelection_field.GetValue(m_RectSelection_instance);
-						var m_SelectionStart_instance	= (UnityEngine.Object[])m_SelectionStart_field.GetValue(m_RectSelection_instance);
-						if (modified &&
-							rectFoundGameObjects != null &&
-							rectFoundGameObjects.Count > 0)
-						{
-							if (EditModeManager.ActiveTool == null)
+							// Find all brushes (and it's GameObjects) that are within the frustrum
+							if (SceneQueryUtility.GetItemsInFrustum(frustum.Planes, rectFoundGameObjects))
 							{
-								if (EditModeManager.EditMode != ToolEditMode.Place ||
-									EditModeManager.EditMode != ToolEditMode.Edit)
-								{
-									EditModeManager.EditMode = ToolEditMode.Place;
-								}
-							}
-
-							foreach(var obj in rectFoundGameObjects)
+								modified = true;
+							} else if (rectFoundGameObjects != null && rectFoundGameObjects.Count > 0)
 							{
-								// if it hasn't already been added, add the obj
-								if (!m_LastSelection_instance.ContainsKey(obj))
-								{
-									m_LastSelection_instance.Add(obj, false);
-								}
-
-
-								// Remove models that we may have selected when we should be selecting it's brushes
-								var model = obj.GetComponentInParent<CSGModel>();
-								if (model != null)
-								{
-									var modelObj = model.gameObject;
-									if (model != null &&
-										modelObj != obj &&
-										m_LastSelection_instance.ContainsKey(modelObj) &&
-										!ArrayUtility.Contains(m_SelectionStart_instance, modelObj))
-									{
-										m_LastSelection_instance.Remove(modelObj);
-										modified = true;
-									}
-								}
-							}
-							
-							currentSelection = m_LastSelection_instance.Keys.ToArray();
-							m_CurrentSelection_field.SetValue(m_RectSelection_instance, currentSelection);
-						}
-						for (int j = m_SelectionStart_instance.Length - 1; j >= 0; j--)
-						{
-							var obj = m_SelectionStart_instance[j] as GameObject;
-							if (obj == null)
-								continue;
-
-							if (obj.GetComponent<GeneratedMeshInstance>() != null)
-							{
-								ArrayUtility.RemoveAt(ref m_SelectionStart_instance, j);
-								m_LastSelection_instance.Remove(obj);
-								m_SelectionStart_field.SetValue(m_RectSelection_instance, m_SelectionStart_instance);
+								rectFoundGameObjects.Clear();
 								modified = true;
 							}
 						}
 
-						if ((Event.current.commandName == "ModifierKeysChanged" || modified))
+						var selectionType			= GetCurrentSelectionType();
+						Object[] currentSelection	= null;
+						var originalLastSelection	= RectSelection.LastSelection;
+						var originalSelectionStart	= RectSelection.SelectionStart;
+
+						if (modified && rectFoundGameObjects != null && rectFoundGameObjects.Count > 0)
 						{
-							if (currentSelection == null || modified) { currentSelection = m_LastSelection_instance.Keys.ToArray(); }
-							var foundObjects = currentSelection;
-
-							for (int j = foundObjects.Length - 1; j >= 0; j--)
+							foreach (var obj in rectFoundGameObjects)
 							{
-								var obj = foundObjects[j];
-								if (obj == null || obj.GetComponent<GeneratedMeshInstance>() != null)
+								// If it hasn't already been added, add the obj
+								if (!originalLastSelection.ContainsKey(obj))
 								{
-									ArrayUtility.RemoveAt(ref foundObjects, j);
-									m_LastSelection_instance.Remove(obj);
-									m_SelectionStart_field.SetValue(m_RectSelection_instance, m_SelectionStart_instance);
+									originalLastSelection.Add(obj, false);
 								}
+								currentSelection = originalLastSelection.Keys.ToArray();
+								RectSelection.CurrentSelection = currentSelection;
 							}
-
-
-							var selectionTypeNormal = SelectionType_Normal;
-							if (Event.current.shift) { selectionTypeNormal = SelectionType_Additive; } else
-							if (EditorGUI.actionKey) { selectionTypeNormal = SelectionType_Subtractive; }
-
-							// calling static method UpdateSelection of RectSelection 
-							UpdateSelection_method.Invoke(null, 
-								new object[] {
-									m_SelectionStart_instance,
-									foundObjects,
-									selectionTypeNormal,
-									m_RectSelecting_instance
-								});
+						} else if (currentSelection == null || modified)
+						{
+							currentSelection = originalLastSelection.Keys.ToArray();
 						}
 
+						if (RemoveGeneratedMeshesFromArray(ref originalSelectionStart))
+							modified = true;
+
+						if (currentSelection != null && RemoveGeneratedMeshesFromArray(ref currentSelection))
+							modified = true;
+
+						if ((Event.current.commandName == "ModifierKeysChanged" || modified))
+						{
+							var foundObjects = currentSelection;
+
+							RemoveGeneratedMeshesFromArray(ref foundObjects);
+
+							RectSelection.UpdateSelection(originalSelectionStart, foundObjects, GetCurrentSelectionType());
+						}
 					}
+					hotControl = GUIUtility.hotControl;
 				}
 			}
-			if (GUIUtility.hotControl != s_RectSelectionID_instance)
+
+			if (hotControl != rectSelectionID)
 			{
-				prevStartGUIPoint = MathConstants.zeroVector2;
-				prevMouseGUIPoint = MathConstants.zeroVector2;
+				prevStartGUIPoint = Vector2.zero;
+				prevMouseGUIPoint = Vector2.zero;
 				rectFoundGameObjects.Clear();
 			}
 			
-
-			var eventType = Event.current.GetTypeForControl(s_RectSelectionID_instance);
-
-			var hotControl = GUIUtility.hotControl;
-
-			if (hotControl == s_RectSelectionID_instance &&
-				EditModeManager.ActiveTool.IgnoreUnityRect)
-			{
-				hotControl = 0;
-				GUIUtility.hotControl = 0;
-			}
-			
-			switch (eventType)
+			bool click = false;
+			var evt = Event.current;
+			switch (typeForControl)
 			{
 				case EventType.MouseDown:
 				{
-					rectClickDown = (Event.current.button == 0 && hotControl == s_RectSelectionID_instance);
+					rectClickDown = (Event.current.button == 0 && areRectSelecting);
 					clickMousePosition = Event.current.mousePosition;
 					mouseDragged = false;
 					break;
 				}
 				case EventType.MouseUp:
 				{
+					if (!mouseDragged)
+					{
+						if ((UnityEditor.HandleUtility.nearestControl != 0 || evt.button != 0) &&
+							(GUIUtility.keyboardControl != 0 || evt.button != 2))
+							break;
+						click = true;
+						Event.current.Use();
+					}
 					rectClickDown = false;
 					break;
 				}
@@ -320,51 +341,30 @@ namespace RealtimeCSG
 					rectClickDown = false;
 					break;
 				}
-				case EventType.Used:
+				case EventType.MouseDrag:
 				{
-					if (clickMousePosition != Event.current.mousePosition)
-					{
-						mouseDragged = true;
-					}
-					if (!mouseDragged && rectClickDown && 
-						Event.current.button == 0)
-					{
-						// m_RectSelection field of SceneView
-						var m_RectSelection_instance = m_RectSelection_field.GetValue(sceneView);
-
-						var m_RectSelecting_instance = (bool)m_RectSelecting_field.GetValue(m_RectSelection_instance);
-						if (!m_RectSelecting_instance)
-						{
-							// make sure GeneratedMeshes are not part of our selection
-							if (Selection.gameObjects != null)
-							{
-								var selectedObjects = Selection.objects;
-								var foundObjects = new List<UnityEngine.Object>();
-								foreach (var obj in selectedObjects)
-								{
-									var component = obj as Component;
-									var gameObject = obj as GameObject;
-									var transform = obj as Transform;
-									if (!(component && component.GetComponent<GeneratedMeshes>()) &&
-										!(gameObject && gameObject.GetComponent<GeneratedMeshes>()) &&
-										!(transform && transform.GetComponent<Transform>()))
-										foundObjects.Add(obj);
-								}
-								if (foundObjects.Count != selectedObjects.Length)
-								{
-									Selection.objects = foundObjects.ToArray();
-								}
-							}
-							
-							SelectionUtility.DoSelectionClick();
-							Event.current.Use();
-						}
-
-					}
-					rectClickDown = false;
+					mouseDragged = true;
 					break;
 				}
-
+				case EventType.Used:
+				{
+					if (!mouseDragged)
+					{
+						var delta = Event.current.mousePosition - clickMousePosition;
+						if (Mathf.Abs(delta.x) > 4 || Mathf.Abs(delta.y) > 4)
+						{
+							mouseDragged = true;
+						}
+						if (mouseDragged || !rectClickDown || Event.current.button != 0 || RectSelection.RectSelecting)
+						{
+							rectClickDown = false;
+							break;
+						}
+					}
+					click = true;
+					Event.current.Use();
+					break;
+				}
 
 				case EventType.ValidateCommand:
 				{
@@ -425,7 +425,15 @@ namespace RealtimeCSG
 					}
 					break;
 				}
-			}			
+			}
+
+			if (click) 
+			{
+				// Make sure GeneratedMeshes are not part of our selection
+				RemoveGeneratedMeshesFromSelection();
+
+				SelectionUtility.DoSelectionClick();
+			}
 		}
 	}
 }

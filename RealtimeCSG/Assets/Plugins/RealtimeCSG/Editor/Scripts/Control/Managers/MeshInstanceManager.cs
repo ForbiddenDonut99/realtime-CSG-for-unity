@@ -1717,6 +1717,25 @@ namespace InternalRealtimeCSG
             return null;
         }
 
+		public static bool IsObjectGenerated(UnityEngine.Object obj) 
+		{
+			if (!obj) 
+				return false;
+
+			var gameObject = obj as GameObject;
+			if (Equals(gameObject, null))
+				return false;
+
+			if (gameObject.name == MeshContainerName)
+				return true;
+
+			var parent = gameObject.transform.parent;
+			if (Equals(parent, null))
+				return false;
+
+			return parent.name == MeshContainerName;
+		}
+
         public static HelperSurfaceDescription GetHelperSurfaceDescription(GeneratedMeshes container, ModelSettingsFlags modelSettings, GeneratedMeshDescription meshDescription, RenderSurfaceType renderSurfaceType)
 		{
 			var key = MeshInstanceKey.GenerateKey(meshDescription);
