@@ -29,12 +29,12 @@ namespace RealtimeCSG
 				rectSelection = rectSelectionField.GetValue(sceneView);
 			}
 		}
-		public static bool		RectSelecting		{ get { return (bool)rectSelectingField.GetValue(rectSelection); } }
-        public static Vector2	SelectStartPoint	{ get { return (Vector2)selectStartPointField.GetValue(rectSelection); } }
-        public static Vector2	SelectMousePoint	{ get { return (Vector2)selectMousePointField.GetValue(rectSelection); } }
-		public static UnityEngine.Object[]			SelectionStart		{ get { return (UnityEngine.Object[])selectionStartField.GetValue(rectSelection); } set { selectionStartField.SetValue(rectSelection, value); } }
-        public static UnityEngine.Object[]			CurrentSelection	{ get { return (UnityEngine.Object[])currentSelectionField.GetValue(rectSelection); } set { currentSelectionField.SetValue(rectSelection, value); } }
-        public static Dictionary<GameObject, bool>	LastSelection		{ get { return (Dictionary<GameObject, bool>)lastSelectionField.GetValue(rectSelection); } }
+		public static bool		RectSelecting		{ get { return (bool) rectSelectingField.GetValue(rectSelection);			} }
+        public static Vector2	SelectStartPoint	{ get { return (Vector2) selectStartPointField.GetValue(rectSelection);		} }
+        public static Vector2	SelectMousePoint	{ get { return (Vector2) selectMousePointField.GetValue(rectSelection);		} }
+		public static Object[]	SelectionStart		{ get { return (Object[]) selectionStartField.GetValue(rectSelection);		} set { selectionStartField.SetValue(rectSelection, value); } }
+        public static Object[]	CurrentSelection	{ get { return (Object[]) currentSelectionField.GetValue(rectSelection);	} set { currentSelectionField.SetValue(rectSelection, value); } }
+        public static Dictionary<GameObject, bool> LastSelection { get { return (Dictionary<GameObject, bool>) lastSelectionField.GetValue(rectSelection); } }
 
 		static object rectSelection;
 		static object selectionTypeAdditive;
@@ -184,9 +184,9 @@ namespace RealtimeCSG
 			}
 		}
 
-		static bool RemoveGeneratedMeshesFromArray(ref UnityEngine.Object[] selection)
+		static bool RemoveGeneratedMeshesFromArray(ref Object[] selection)
 		{
-			var found = new List<UnityEngine.Object>();
+			var found = new List<Object>();
 			for (int i = selection.Length - 1; i >= 0; i--) {
 				var obj = selection[i];
 				if (MeshInstanceManager.IsObjectGenerated(obj))
@@ -257,10 +257,13 @@ namespace RealtimeCSG
 							if (SceneQueryUtility.GetItemsInFrustum(frustum.Planes, rectFoundGameObjects))
 							{
 								modified = true;
-							} else if (rectFoundGameObjects != null && rectFoundGameObjects.Count > 0)
+							} else
 							{
-								rectFoundGameObjects.Clear();
-								modified = true;
+								if (rectFoundGameObjects != null && rectFoundGameObjects.Count > 0)
+								{
+									rectFoundGameObjects.Clear();
+									modified = true;
+								}
 							}
 						}
 
@@ -278,9 +281,10 @@ namespace RealtimeCSG
 								{
 									originalLastSelection.Add(obj, false);
 								}
-								currentSelection = originalLastSelection.Keys.ToArray();
-								RectSelection.CurrentSelection = currentSelection;
 							}
+							currentSelection = originalLastSelection.Keys.ToArray();
+							RectSelection.CurrentSelection = currentSelection;
+
 						} else if (currentSelection == null || modified)
 						{
 							currentSelection = originalLastSelection.Keys.ToArray();
@@ -297,7 +301,6 @@ namespace RealtimeCSG
 							var foundObjects = currentSelection;
 
 							RemoveGeneratedMeshesFromArray(ref foundObjects);
-
 							RectSelection.UpdateSelection(originalSelectionStart, foundObjects, GetCurrentSelectionType());
 						}
 					}
@@ -327,10 +330,9 @@ namespace RealtimeCSG
 				{
 					if (!mouseDragged)
 					{
-						if ((UnityEditor.HandleUtility.nearestControl != 0 || evt.button != 0) &&
+						if ((HandleUtility.nearestControl != 0 || evt.button != 0) &&
 							(GUIUtility.keyboardControl != 0 || evt.button != 2))
 							break;
-						click = true;
 						Event.current.Use();
 					}
 					rectClickDown = false;
@@ -355,11 +357,11 @@ namespace RealtimeCSG
 						{
 							mouseDragged = true;
 						}
-						if (mouseDragged || !rectClickDown || Event.current.button != 0 || RectSelection.RectSelecting)
-						{
-							rectClickDown = false;
-							break;
-						}
+					}
+					if (mouseDragged || !rectClickDown || Event.current.button != 0 || RectSelection.RectSelecting)
+					{
+						rectClickDown = false;
+						break;
 					}
 					click = true;
 					Event.current.Use();
@@ -368,41 +370,16 @@ namespace RealtimeCSG
 
 				case EventType.ValidateCommand:
 				{
-					if (Event.current.commandName == "SelectAll")
-					{
-						Event.current.Use();
-						break;
-					}
-					if (Keys.HandleSceneValidate(EditModeManager.CurrentTool, true))
-					{
-						Event.current.Use();
-						HandleUtility.Repaint();
-					}				
+					if (Event.current.commandName != "SelectAll")
+							break;
+					Event.current.Use();
 					break; 
 				}
 				case EventType.ExecuteCommand:
 				{
-					if (Event.current.commandName == "SelectAll")
-					{
-						var transforms = new List<UnityEngine.Object>();
-						for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
-						{
-							var scene = SceneManager.GetSceneAt(sceneIndex);
-							foreach (var gameObject in scene.GetRootGameObjects())
-							{
-								foreach (var transform in gameObject.GetComponentsInChildren<Transform>())
-								{
-									if ((transform.hideFlags & (HideFlags.NotEditable | HideFlags.HideInHierarchy)) == (HideFlags.NotEditable | HideFlags.HideInHierarchy))
-										continue;
-									transforms.Add(transform.gameObject);
-								}
-							}
-						}
-						Selection.objects = transforms.ToArray();
-
-						Event.current.Use();
+					if (Event.current.commandName != "SelectAll")
 						break;
-					}
+					
 					break;
 				}
 
@@ -433,6 +410,41 @@ namespace RealtimeCSG
 				RemoveGeneratedMeshesFromSelection();
 
 				SelectionUtility.DoSelectionClick();
+			}
+		}
+
+		public static void DoSelectionClick(SceneView sceneView, Vector2 mousePosition)
+		{
+			GameObject gameObject = null;
+			SceneQueryUtility.FindClickWorldIntersection(mousePosition, out gameObject);
+
+			// If we're a child of an operation that has a "handle as one" flag set, return that instead
+			gameObject = SceneQueryUtility.FindSelectionBase(gameObject);
+
+			var selectionType = GetCurrentSelectionType();
+			var selectedObjectsOnClick = new List<int>(Selection.instanceIDs);
+			var instanceID = 0;
+
+			switch (selectionType)
+			{
+				case SelectionType.Additive:
+					if (!gameObject) 
+						break;
+					instanceID = gameObject.GetInstanceID();
+					selectedObjectsOnClick.Add(instanceID);
+					Selection.instanceIDs = selectedObjectsOnClick.ToArray();
+					break;
+				case SelectionType.Subtractive:
+					if (!gameObject)
+						break;
+					instanceID = gameObject.GetInstanceID();
+					selectedObjectsOnClick.Remove(instanceID);
+					Selection.instanceIDs = selectedObjectsOnClick.ToArray();
+					break;
+				default:
+					Selection.activeGameObject = gameObject;
+					break;
+
 			}
 		}
 	}

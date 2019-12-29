@@ -530,6 +530,7 @@ namespace InternalRealtimeCSG
 				modelMeshes = CSGModelManager.GetModelMeshes(intersectionModel);
 			}
 
+			/*
 			HideFlags[] hideFlags = null;
 			if (modelMeshes != null)
 			{
@@ -569,6 +570,7 @@ namespace InternalRealtimeCSG
 				return (foundObject != null);
 
 			foundObject = gameObject;
+			*/
 			return true;
 		}
         #endregion
