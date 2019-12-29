@@ -150,6 +150,7 @@ namespace RealtimeCSG
 		static Vector2 prevMouseGUIPoint;
 		static Vector2 prevStartScreenPoint;
 		static Vector2 prevMouseScreenPoint;
+		static bool hasClicked							= false;
 		static bool rectClickDown						= false;
 		static bool mouseDragged						= false;
 		static int passiveControlFrames					= 0;
@@ -311,47 +312,35 @@ namespace RealtimeCSG
 				prevStartGUIPoint = Vector2.zero;
 				prevMouseGUIPoint = Vector2.zero;
 				rectFoundGameObjects.Clear();
+			} else {
+				hotControl = 0;
+				GUIUtility.hotControl = 0;
 			}
 
-			// Passive control frames
-			if (passiveControlFrames > 0)
-			{
-				passiveControlFrames--;
-				int controlID = GUIUtility.GetControlID(FocusType.Passive);
-				GUIUtility.hotControl = controlID;
-			} else {
-				GUIUtility.hotControl = hotControl;
-			}
-			
 			bool click = false;
+			int controlID = GUIUtility.GetControlID(FocusType.Passive);
+
 			switch (typeForControl)
 			{
 				case EventType.MouseDown:
 				{
-					rectClickDown = (evt.button == 0 && areRectSelecting);
-					clickMousePosition = evt.mousePosition;
-					mouseDragged = false;
-					if (rectClickDown)
+					if (HandleUtility.nearestControl == controlID && (evt.button == 0))
 					{
-						if (evt.shift || evt.alt)
-						{
-							passiveControlFrames = 1;
-						}
-						click = true;
-						evt.Use();
+						GUIUtility.hotControl = controlID;
+						hasClicked = (evt.button == 0);
+						rectClickDown = (hasClicked && areRectSelecting);
+						clickMousePosition = evt.mousePosition;
+						mouseDragged = false;
 					}
 					break;
 				}
 				case EventType.MouseUp:
 				{
-					passiveControlFrames = 0;
-					if (!mouseDragged)
+					if (GUIUtility.hotControl == controlID && (evt.button == 0))
 					{
-						if ((HandleUtility.nearestControl != 0 || evt.button != 0) &&
-							(GUIUtility.keyboardControl != 0 || evt.button != 2)) 
-						{
-							break;
-						}
+						GUIUtility.hotControl = 0;
+						click = true;
+						evt.Use();
 					}
 					rectClickDown = false;
 					break;
@@ -363,8 +352,10 @@ namespace RealtimeCSG
 				}
 				case EventType.MouseDrag:
 				{
-					mouseDragged = true;
-					passiveControlFrames = 0;
+					if (GUIUtility.hotControl == controlID && evt.button == 0)
+					{
+						mouseDragged = true;	
+					}
 					break;
 				}
 				case EventType.Used:
@@ -375,7 +366,6 @@ namespace RealtimeCSG
 						if (Mathf.Abs(delta.x) > 4 || Mathf.Abs(delta.y) > 4)
 						{
 							mouseDragged = true;
-							passiveControlFrames = 0;
 						}
 					}
 					if (mouseDragged || !rectClickDown || evt.button != 0 || RectSelection.RectSelecting)
@@ -383,8 +373,6 @@ namespace RealtimeCSG
 						rectClickDown = false;
 						break;
 					}
-					click = true;
-					evt.Use();
 					break;
 				}
 
