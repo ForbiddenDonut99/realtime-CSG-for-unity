@@ -10,6 +10,12 @@ namespace RealtimeCSG
 {
     internal static class SurfaceUtility
     {
+		public const TexGenFlags HiddenSurfaceFlags = 0
+				   | TexGenFlags.NoRender
+				   | TexGenFlags.NoCastShadows
+				   | TexGenFlags.NoReceiveShadows
+				   | TexGenFlags.NoCollision;
+
         public static bool CanUnSmooth(SelectedBrushSurface[] selectedSurfaces)
         {
             if (selectedSurfaces == null ||
@@ -164,6 +170,11 @@ namespace RealtimeCSG
                 }
             }
         }
+
+		public static void SetHiddenSurfaceTexGenFlags(SelectedBrushSurface[] selectedBrushSurfaces)
+		{
+			SetSurfaceTexGenFlags(selectedBrushSurfaces, HiddenSurfaceFlags, true);
+		}
         
         public static void SetTextureLock(SelectedBrushSurface[] selectedBrushSurfaces, bool value)
         {

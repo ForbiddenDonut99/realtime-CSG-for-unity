@@ -449,7 +449,7 @@ namespace RealtimeCSG
 		static SurfaceState surfaceState;
 		const int lightMapUVButtonOffset = 20;
 
-		
+		const int lineHeight				= 18;
 		const int boxOffset					= 4;
 		const int boxWidth					= 213;
 		
@@ -458,7 +458,7 @@ namespace RealtimeCSG
 		const int selectionBoxHeight        = 22;
 		const int transformationBoxHeight	= 58;
 		const int uvCommandsBoxHeight		= 76;
-		const int surfaceFlagsBoxHeight		= 56;
+		const int surfaceFlagsBoxHeight		= 74;
 		
 		const int surfaceEditTitleHeight	= 16;
 		const int surfaceEditWindowHeight   = surfaceEditTitleHeight	+ 
@@ -741,7 +741,7 @@ namespace RealtimeCSG
 						{
 							EditorGUI.BeginDisabledGroup(!surfaceState.canSmooth);
 							{
-								tempRect.Set(rect.x+8, rect.y + offset + 38, 94, 15);
+								tempRect.Set(rect.x+8, rect.y + offset + (38 + lineHeight), 94, 15);
 								if (GUI.Button(tempRect, ContentSmoothSurfaces, leftStyle))
 								{ SurfaceUtility.Smooth(surfaceState.selectedBrushSurfaces); }
 								TooltipUtility.SetToolTip(ToolTipSmoothSurfaces, tempRect);
@@ -749,7 +749,7 @@ namespace RealtimeCSG
 							EditorGUI.EndDisabledGroup();
 							EditorGUI.BeginDisabledGroup(!surfaceState.canUnSmooth);
 							{
-								tempRect.Set(rect.x+102, rect.y + offset + 38, 112, 15);
+								tempRect.Set(rect.x+102, rect.y + offset + (38 + lineHeight), 112, 15);
 								if (GUI.Button(tempRect, ContentUnSmoothSurfaces, rightStyle))
 								{ SurfaceUtility.UnSmooth(surfaceState.selectedBrushSurfaces); }
 								TooltipUtility.SetToolTip(ToolTipUnSmoothSurfaces, tempRect);

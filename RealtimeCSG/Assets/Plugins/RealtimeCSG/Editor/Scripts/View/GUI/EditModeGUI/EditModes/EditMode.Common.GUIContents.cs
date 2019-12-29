@@ -20,11 +20,13 @@ namespace InternalRealtimeCSG
 
 		private static readonly GUIContent	ContentVisibleSurfaces			= new GUIContent("Visible");
 		private static readonly GUIContent	ContentCollisionSurfaces		= new GUIContent("Collision");
+		private static readonly GUIContent	ContentHideSurfaces				= new GUIContent("Hide Surface");
 		
 		private static readonly ToolTip		ToolTipCastShadowsSurfaces		= new ToolTip("Cast Shadows", "Toggle shadow casting for all selected surfaces. When cast is not toggled, these surfaces will not cast a shadow.");
 		private static readonly ToolTip		ToolTipReceiveShadowsSurfaces	= new ToolTip("Receive Shadows", "Toggle shadow receiving for all selected surfaces. When receive is not toggled, these surfaces will not receive shadows (when visible). Note: only works with forward rendering");
 		private static readonly ToolTip		ToolTipVisibleSurfaces			= new ToolTip("Visible", "Toggle visibility for all selected surfaces. When visible is not toggled, it won't be part of the rendered mesh.");
 		private static readonly ToolTip		ToolTipCollisionSurfaces		= new ToolTip("Collision", "Toggle collision on/off for all selected surfaces. When collision is not toggled, it won't be part of the collision mesh.");
+		private static readonly ToolTip		ToolTipHideSurfaces				= new ToolTip("Hide Surface", "Disable all rendering and collision on selected surface.");
 
 	}
 }
