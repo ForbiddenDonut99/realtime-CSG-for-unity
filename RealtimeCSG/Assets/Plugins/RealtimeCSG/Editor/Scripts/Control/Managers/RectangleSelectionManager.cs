@@ -399,7 +399,24 @@ namespace RealtimeCSG
 				{
 					if (evt.commandName != "SelectAll")
 						break;
-					
+					var transforms = new List<Object>();
+					for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
+					{
+						var scene = SceneManager.GetSceneAt(sceneIndex);
+						foreach (var gameObject in scene.GetRootGameObjects())
+						{
+							foreach (var transform in gameObject.GetComponentsInChildren<Transform>())
+							{
+								if ((transform.hideFlags & (HideFlags.NotEditable | HideFlags.HideInHierarchy)) == (HideFlags.NotEditable | HideFlags.HideInHierarchy))
+									continue;
+								transforms.Add(transform.gameObject);
+							}
+						}
+					}
+					var foundObjects = transforms.ToArray();
+					RemoveGeneratedMeshesFromArray(ref foundObjects);
+					Selection.objects = foundObjects;
+					evt.Use();
 					break;
 				}
 
@@ -415,6 +432,10 @@ namespace RealtimeCSG
 
 				case EventType.KeyUp:
 				{
+					if (hotControl == 0 && evt.keyCode == KeyCode.Escape)
+					{
+						Selection.activeTransform = null;
+					}
 					if (Keys.HandleSceneKeyUp(EditModeManager.CurrentTool, true))
 					{
 						evt.Use();
