@@ -152,6 +152,7 @@ namespace RealtimeCSG
 		static Vector2 prevMouseScreenPoint;
 		static bool rectClickDown						= false;
 		static bool mouseDragged						= false;
+		static int passiveControlFrames					= 0;
 		static Vector2 clickMousePosition				= Vector2.zero;
 
 		public static SelectionType GetCurrentSelectionType()
@@ -201,9 +202,6 @@ namespace RealtimeCSG
 			return false;
 		}
 
-		// Update rectangle selection using reflection
-		// This is hacky & dangerous 
-		// LOOK AWAY NOW!
 		internal static void Update(SceneView sceneView)
 		{
 			if (!RectSelection.Valid)
@@ -217,15 +215,16 @@ namespace RealtimeCSG
 			}
 			RectSelection.SceneView = sceneView;
 
+			var evt					= Event.current;
 			var rectSelectionID		= RectSelection.RectSelectionID;
 			var hotControl			= GUIUtility.hotControl;
 			var areRectSelecting	= hotControl == rectSelectionID;
-			var typeForControl		= Event.current.GetTypeForControl(rectSelectionID);
+			var typeForControl		= evt.GetTypeForControl(rectSelectionID);
 
 			// Check if we're rect-selecting
 			if (areRectSelecting)
 			{
-				if ((typeForControl == EventType.Used || Event.current.commandName == "ModifierKeysChanged") &&
+				if ((typeForControl == EventType.Used || evt.commandName == "ModifierKeysChanged") &&
 					RectSelection.RectSelecting)
 				{
 					var selectStartPoint = RectSelection.SelectStartPoint;
@@ -237,13 +236,13 @@ namespace RealtimeCSG
 					if (prevStartGUIPoint != selectStartPoint)
 					{
 						prevStartGUIPoint		= selectStartPoint;
-                        prevStartScreenPoint	= Event.current.mousePosition;
+                        prevStartScreenPoint	= evt.mousePosition;
                         needUpdate				= true;
 					}
 					if (prevMouseGUIPoint != selectMousePoint)
 					{
 						prevMouseGUIPoint		= selectMousePoint;
-                        prevMouseScreenPoint	= Event.current.mousePosition;
+                        prevMouseScreenPoint	= evt.mousePosition;
                         needUpdate				= true;
 					}
 					if (needUpdate)
@@ -296,7 +295,7 @@ namespace RealtimeCSG
 						if (currentSelection != null && RemoveGeneratedMeshesFromArray(ref currentSelection))
 							modified = true;
 
-						if ((Event.current.commandName == "ModifierKeysChanged" || modified))
+						if ((evt.commandName == "ModifierKeysChanged" || modified))
 						{
 							var foundObjects = currentSelection;
 
@@ -304,7 +303,6 @@ namespace RealtimeCSG
 							RectSelection.UpdateSelection(originalSelectionStart, foundObjects, GetCurrentSelectionType());
 						}
 					}
-					hotControl = GUIUtility.hotControl;
 				}
 			}
 
@@ -314,26 +312,46 @@ namespace RealtimeCSG
 				prevMouseGUIPoint = Vector2.zero;
 				rectFoundGameObjects.Clear();
 			}
+
+			// Passive control frames
+			if (passiveControlFrames > 0)
+			{
+				passiveControlFrames--;
+				int controlID = GUIUtility.GetControlID(FocusType.Passive);
+				GUIUtility.hotControl = controlID;
+			} else {
+				GUIUtility.hotControl = hotControl;
+			}
 			
 			bool click = false;
-			var evt = Event.current;
 			switch (typeForControl)
 			{
 				case EventType.MouseDown:
 				{
-					rectClickDown = (Event.current.button == 0 && areRectSelecting);
-					clickMousePosition = Event.current.mousePosition;
+					rectClickDown = (evt.button == 0 && areRectSelecting);
+					clickMousePosition = evt.mousePosition;
 					mouseDragged = false;
+					if (rectClickDown)
+					{
+						if (evt.shift || evt.alt)
+						{
+							passiveControlFrames = 1;
+						}
+						click = true;
+						evt.Use();
+					}
 					break;
 				}
 				case EventType.MouseUp:
 				{
+					passiveControlFrames = 0;
 					if (!mouseDragged)
 					{
 						if ((HandleUtility.nearestControl != 0 || evt.button != 0) &&
-							(GUIUtility.keyboardControl != 0 || evt.button != 2))
+							(GUIUtility.keyboardControl != 0 || evt.button != 2)) 
+						{
 							break;
-						Event.current.Use();
+						}
 					}
 					rectClickDown = false;
 					break;
@@ -346,38 +364,40 @@ namespace RealtimeCSG
 				case EventType.MouseDrag:
 				{
 					mouseDragged = true;
+					passiveControlFrames = 0;
 					break;
 				}
 				case EventType.Used:
 				{
 					if (!mouseDragged)
 					{
-						var delta = Event.current.mousePosition - clickMousePosition;
+						var delta = evt.mousePosition - clickMousePosition;
 						if (Mathf.Abs(delta.x) > 4 || Mathf.Abs(delta.y) > 4)
 						{
 							mouseDragged = true;
+							passiveControlFrames = 0;
 						}
 					}
-					if (mouseDragged || !rectClickDown || Event.current.button != 0 || RectSelection.RectSelecting)
+					if (mouseDragged || !rectClickDown || evt.button != 0 || RectSelection.RectSelecting)
 					{
 						rectClickDown = false;
 						break;
 					}
 					click = true;
-					Event.current.Use();
+					evt.Use();
 					break;
 				}
 
 				case EventType.ValidateCommand:
 				{
-					if (Event.current.commandName != "SelectAll")
+					if (evt.commandName != "SelectAll")
 							break;
-					Event.current.Use();
+					evt.Use();
 					break; 
 				}
 				case EventType.ExecuteCommand:
 				{
-					if (Event.current.commandName != "SelectAll")
+					if (evt.commandName != "SelectAll")
 						break;
 					
 					break;
@@ -387,7 +407,7 @@ namespace RealtimeCSG
 				{
 					if (Keys.HandleSceneKeyDown(EditModeManager.CurrentTool, true))
 					{
-						Event.current.Use();
+						evt.Use();
 						HandleUtility.Repaint();
 					}
 					break;
@@ -397,7 +417,7 @@ namespace RealtimeCSG
 				{
 					if (Keys.HandleSceneKeyUp(EditModeManager.CurrentTool, true))
 					{
-						Event.current.Use();
+						evt.Use();
 						HandleUtility.Repaint();
 					}
 					break;
@@ -409,7 +429,7 @@ namespace RealtimeCSG
 				// Make sure GeneratedMeshes are not part of our selection
 				RemoveGeneratedMeshesFromSelection();
 
-				SelectionUtility.DoSelectionClick();
+				DoSelectionClick(sceneView, clickMousePosition);
 			}
 		}
 
@@ -444,7 +464,6 @@ namespace RealtimeCSG
 				default:
 					Selection.activeGameObject = gameObject;
 					break;
-
 			}
 		}
 	}

@@ -528,49 +528,11 @@ namespace InternalRealtimeCSG
 			if (intersectionModel != null)
 			{
 				modelMeshes = CSGModelManager.GetModelMeshes(intersectionModel);
-			}
-
-			/*
-			HideFlags[] hideFlags = null;
-			if (modelMeshes != null)
+			} else 
 			{
-				hideFlags = new HideFlags[modelMeshes.Length];
-				for (var i = 0; i < modelMeshes.Length; i++)
-				{
-					hideFlags[i] = modelMeshes[i].hideFlags;
-                    if (modelMeshes[i].hideFlags != HideFlags.None)
-					    modelMeshes[i].hideFlags = HideFlags.None;
-				}
-			}
-
-            var gameObject = HandleUtility.PickGameObject(screenPos, true);
-
-            if (modelMeshes != null)
-			{
-				for (var i = 0; i < modelMeshes.Length; i++)
-				{
-					var modelMesh = modelMeshes[i];
-					if (!modelMesh)
-						continue;
-
-					if (gameObject == modelMesh)
-						gameObject = null;
-
-                    if (modelMesh.hideFlags != hideFlags[i])
-                        modelMesh.hideFlags = hideFlags[i];
-				}
-			}
-
-			if (!gameObject ||
-				gameObject.GetComponent<CSGModel>() ||
-				gameObject.GetComponent<CSGBrush>() ||
-				gameObject.GetComponent<CSGOperation>() ||
-				gameObject.GetComponent<GeneratedMeshInstance>() ||
-				gameObject.GetComponent<GeneratedMeshes>())
+				foundObject = HandleUtility.PickGameObject(screenPos, true);
 				return (foundObject != null);
-
-			foundObject = gameObject;
-			*/
+			}
 			return true;
 		}
         #endregion
