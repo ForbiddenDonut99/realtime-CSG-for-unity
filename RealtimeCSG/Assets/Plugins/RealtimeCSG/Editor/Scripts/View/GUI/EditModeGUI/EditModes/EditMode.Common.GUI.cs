@@ -186,19 +186,6 @@ namespace InternalRealtimeCSG
 			}
 			GUILayout.EndHorizontal();
 			EditorGUI.showMixedValue = false;
-
-			// Hide button
-			GUILayout.BeginHorizontal(CSG_GUIStyleUtility.ContentEmpty);
-			{
-				EditorGUI.BeginChangeCheck();
-				{
-					bool clicked = GUILayout.Button(ContentHideSurfaces);
-					TooltipUtility.SetToolTip(ToolTipHideSurfaces);
-					if (clicked)
-						SurfaceUtility.SetHiddenSurfaceTexGenFlags(selectedBrushSurfaces);
-				}
-			}
-			GUILayout.EndHorizontal();
 		}
 		
 		public static void OnSurfaceFlagButtons(Rect rect, SurfaceFlagState state, SelectedBrushSurface[] selectedBrushSurfaces)
@@ -260,16 +247,6 @@ namespace InternalRealtimeCSG
 					SurfaceUtility.SetSurfaceTexGenFlags(selectedBrushSurfaces, TexGenFlags.NoCollision, state.noCollision.Value);
 			}
 			EditorGUI.showMixedValue = false;
-			{
-				EditorGUI.BeginChangeCheck();
-				{
-					tempRect.Set(rect.x + 4, rect.y + 36, 205, 15);
-					bool clicked = GUI.Button(tempRect, ContentHideSurfaces);
-					TooltipUtility.SetToolTip(ToolTipHideSurfaces, tempRect);
-					if (clicked)
-						SurfaceUtility.SetHiddenSurfaceTexGenFlags(selectedBrushSurfaces);
-				}
-			}
 		}
 
 
@@ -338,22 +315,6 @@ namespace InternalRealtimeCSG
 					{
 						if (noCollision) texGenFlags |=  TexGenFlags.NoCollision; 
 						else		     texGenFlags &= ~TexGenFlags.NoCollision;
-						GUI.changed = true;
-					}
-				}
-				GUILayout.EndHorizontal();
-
-				// Hide button
-				GUILayout.BeginHorizontal(CSG_GUIStyleUtility.ContentEmpty);
-				{
-					bool clicked = GUILayout.Button(ContentHideSurfaces);
-					TooltipUtility.SetToolTip(ToolTipHideSurfaces);
-					if (clicked) {
-						noRender			= true;
-						noCastShadows		= true;
-						noReceiveShadows	= true;
-						noCollision			= true;
-						texGenFlags |= SurfaceUtility.HiddenSurfaceFlags;
 						GUI.changed = true;
 					}
 				}

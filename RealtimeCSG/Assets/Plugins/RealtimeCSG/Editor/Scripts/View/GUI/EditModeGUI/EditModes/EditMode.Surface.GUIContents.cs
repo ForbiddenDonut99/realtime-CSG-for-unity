@@ -49,7 +49,10 @@ namespace RealtimeCSG
 		private static readonly GUIContent	ContentSelectAllSurfaces	= new GUIContent("Select all brush surfaces");
 		private static readonly ToolTip		TooltipSelectAllSurfaces	= new ToolTip("Select all brush surfaces", "Select all the surfaces of all the\n" +
 																												   "brushes that are currently selected.");
-		
+		private static readonly GUIContent	ContentShowSurface			= new GUIContent("Show");
+		private static readonly GUIContent	ContentHideSurface			= new GUIContent("Hide");
+		private static readonly ToolTip		TooltipShowSurface			= new ToolTip("Show Surface", "Show the selected brush surface");
+		private static readonly ToolTip		TooltipHideSurface			= new ToolTip("Hide Surface", "Hide the selected brush surface");
 
 		private static readonly GUIContent	ContentReset			= new GUIContent("Reset");
 		private static readonly GUIContent	ContentResetXY			= new GUIContent("UV");

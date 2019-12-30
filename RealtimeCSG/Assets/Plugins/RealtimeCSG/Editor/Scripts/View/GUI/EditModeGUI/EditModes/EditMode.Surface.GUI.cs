@@ -456,9 +456,10 @@ namespace RealtimeCSG
 		const int materialViewBoxHeight		= 134;
 		const int textureLockedBoxHeight	= 22;
 		const int selectionBoxHeight        = 22;
+		const int showHideBoxHeight			= 22;
 		const int transformationBoxHeight	= 58;
 		const int uvCommandsBoxHeight		= 76;
-		const int surfaceFlagsBoxHeight		= 74;
+		const int surfaceFlagsBoxHeight		= 56;
 		
 		const int surfaceEditTitleHeight	= 16;
 		const int surfaceEditWindowHeight   = surfaceEditTitleHeight	+ 
@@ -466,6 +467,7 @@ namespace RealtimeCSG
 											  materialViewBoxHeight		+ boxOffset +
 											  textureLockedBoxHeight	+ boxOffset +
 											  selectionBoxHeight		+ boxOffset +
+											  showHideBoxHeight			+ boxOffset +
 											  transformationBoxHeight	+ boxOffset +
 											  uvCommandsBoxHeight		+ boxOffset +
 											  surfaceFlagsBoxHeight		+ boxOffset +
@@ -544,6 +546,7 @@ namespace RealtimeCSG
 			{
 				{ 
 					
+					// Lock texture box 
 					offset += boxOffset;
 					tempRect.Set(rect.x + 4, rect.y + offset,  boxWidth, textureLockedBoxHeight);//138
 					GUI.Box(tempRect, GUIContent.none, GUI.skin.box);
@@ -561,7 +564,29 @@ namespace RealtimeCSG
 						}
 					}
 					offset += textureLockedBoxHeight;
-					
+
+					// Show and Hide box
+					offset += boxOffset;
+					tempRect.Set(rect.x + 4, rect.y + offset, boxWidth, showHideBoxHeight);
+					GUI.Box(tempRect, GUIContent.none, GUI.skin.box);
+					{
+						// Show
+						tempRect.Set(rect.x + 8, rect.y + offset + 3, boxWidth / 2, 16);
+						if (GUI.Button(tempRect, ContentShowSurface, leftStyle)) {
+							SurfaceUtility.SetSurfacesHideFlags(surfaceState.selectedBrushSurfaces, false);
+						}
+						TooltipUtility.SetToolTip(TooltipShowSurface, tempRect);
+
+						// Hide
+						tempRect.Set(rect.x + (boxWidth / 2) + 8, rect.y + offset + 3, (boxWidth / 2) - 8, 16);
+						if (GUI.Button(tempRect, ContentHideSurface, rightStyle)) {
+							SurfaceUtility.SetSurfacesHideFlags(surfaceState.selectedBrushSurfaces, true);
+						}
+						TooltipUtility.SetToolTip(TooltipHideSurface, tempRect);
+					}
+					offset += showHideBoxHeight;
+
+					// Select all surfaces box
 					offset += boxOffset;
 					tempRect.Set(rect.x+4, rect.y + offset, boxWidth, selectionBoxHeight);
 					GUI.Box(tempRect, GUIContent.none, GUI.skin.box);
@@ -575,7 +600,7 @@ namespace RealtimeCSG
 						}
 					}
 					offset += selectionBoxHeight;
-					
+
 					offset += boxOffset;
 					tempRect.Set(rect.x+4, rect.y + offset, boxWidth, transformationBoxHeight);//164
 					GUI.Box(tempRect, GUIContent.none, GUI.skin.box);
@@ -741,7 +766,7 @@ namespace RealtimeCSG
 						{
 							EditorGUI.BeginDisabledGroup(!surfaceState.canSmooth);
 							{
-								tempRect.Set(rect.x+8, rect.y + offset + (38 + lineHeight), 94, 15);
+								tempRect.Set(rect.x+8, rect.y + offset + 38, 94, 15);
 								if (GUI.Button(tempRect, ContentSmoothSurfaces, leftStyle))
 								{ SurfaceUtility.Smooth(surfaceState.selectedBrushSurfaces); }
 								TooltipUtility.SetToolTip(ToolTipSmoothSurfaces, tempRect);
@@ -749,7 +774,7 @@ namespace RealtimeCSG
 							EditorGUI.EndDisabledGroup();
 							EditorGUI.BeginDisabledGroup(!surfaceState.canUnSmooth);
 							{
-								tempRect.Set(rect.x+102, rect.y + offset + (38 + lineHeight), 112, 15);
+								tempRect.Set(rect.x+102, rect.y + offset + 38, 112, 15);
 								if (GUI.Button(tempRect, ContentUnSmoothSurfaces, rightStyle))
 								{ SurfaceUtility.UnSmooth(surfaceState.selectedBrushSurfaces); }
 								TooltipUtility.SetToolTip(ToolTipUnSmoothSurfaces, tempRect);
@@ -1087,6 +1112,7 @@ namespace RealtimeCSG
 
 			TooltipUtility.SetToolTip(CSG_GUIStyleUtility.PopOutTooltip, buttonArea);
 			int controlID = GUIUtility.GetControlID(SceneViewSurfaceOverlayHash, FocusType.Keyboard, boxArea);
+			var evt = Event.current;
 			switch (Event.current.GetTypeForControl(controlID))
 			{
 				case EventType.MouseDown:	{ if (boxArea.Contains(Event.current.mousePosition)) { GUIUtility.hotControl = controlID; GUIUtility.keyboardControl = controlID; Event.current.Use(); } break; }
@@ -1094,6 +1120,20 @@ namespace RealtimeCSG
 				case EventType.MouseUp:		{ if (GUIUtility.hotControl == controlID) { GUIUtility.hotControl = 0; GUIUtility.keyboardControl = 0; Event.current.Use(); } break; }
 				case EventType.MouseDrag:	{ if (GUIUtility.hotControl == controlID) { Event.current.Use(); } break; }
 				case EventType.ScrollWheel: { if (boxArea.Contains(Event.current.mousePosition)) { Event.current.Use(); } break; }
+
+				// Show and Hide toggle
+				case EventType.KeyUp:
+				{
+					switch (evt.keyCode)
+					{
+						case KeyCode.H:
+						{
+							SurfaceUtility.SetSurfacesHideFlags(surfaceState.selectedBrushSurfaces, !evt.alt);
+							break;
+						}
+					}
+					break;
+				}
 			}
 		}
 
