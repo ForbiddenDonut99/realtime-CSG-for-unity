@@ -1084,6 +1084,8 @@ namespace RealtimeCSG
                     {
                         if (Keys.CancelActionKey.IsKeyPressed()) { Event.current.Use(); break; }
                         if (Keys.CopyMaterialTexGen.IsKeyPressed()) { if (dragMode == DragMode.None) dragMode = DragMode.TextureCopy; Event.current.Use(); break; }
+						if (Keys.QuickShowSurface.IsKeyPressed()) { SurfaceUtility.SetSurfacesHideFlags(selectedSurfaces, false); Event.current.Use(); break; }
+						if (Keys.QuickHideSurface.IsKeyPressed()) { SurfaceUtility.SetSurfacesHideFlags(selectedSurfaces, true); Event.current.Use(); break; }
                         if (Keys.HandleSceneKeyDown(EditModeManager.CurrentTool, false)) { Event.current.Use(); break; }
                         break;
                     }

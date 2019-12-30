@@ -43,6 +43,10 @@ namespace RealtimeCSG
 
 		[KeyDescription("Surface mode/Smear or copy material")]
 		public static readonly KeyEvent CopyMaterialTexGen				= new KeyEvent(KeyCode.G, hold: true);
+		[KeyDescription("Surface mode/Show Face")]
+		public static readonly KeyEvent QuickShowSurface				= new KeyEvent(KeyCode.H, EventModifiers.Alt);
+		[KeyDescription("Surface mode/Hide Face")]
+		public static readonly KeyEvent QuickHideSurface				= new KeyEvent(KeyCode.H, EventModifiers.None);
 
 		[KeyDescription("Clip mode/Next clip mode")]
 		public static readonly KeyEvent CycleClipModes					= new KeyEvent(KeyCode.Tab);
@@ -173,6 +177,7 @@ namespace RealtimeCSG
 			if (Keys.DoubleGridSizeKey			.IsKeyPressed()) { return true; }
 			if (Keys.ToggleShowGridKey			.IsKeyPressed()) { return true; }
 			if (Keys.ToggleSnappingKey			.IsKeyPressed()) { return true; }
+
 			return false;
 		}
 
