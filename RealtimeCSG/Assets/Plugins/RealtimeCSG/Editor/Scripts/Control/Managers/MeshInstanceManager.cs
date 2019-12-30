@@ -121,7 +121,7 @@ namespace InternalRealtimeCSG
 			for (var i = 0; i < models.Length; i++)
 			{
 				var model = models[i];
-				if (model)
+				if (model && model.gameObject.activeInHierarchy)
 					MeshInstanceManager.ValidateModelDelayed(model);
 			}
 
@@ -149,6 +149,9 @@ namespace InternalRealtimeCSG
 			for (var i = 0; i < models.Length; i++)
 			{
 				var model = models[i];
+				if (!model.gameObject.activeInHierarchy)
+					continue;
+
                 if (!ModelTraits.IsModelEditable(model))
 					continue;
 
@@ -399,6 +402,9 @@ namespace InternalRealtimeCSG
 			for (var i = 0; i < models.Length; i++)
 			{
 				var model = models[i];
+				if (!model.gameObject.activeInHierarchy)
+					continue;
+
                 if (!ModelTraits.IsModelEditable(model))
 					continue;
 
@@ -476,6 +482,9 @@ namespace InternalRealtimeCSG
 			var renderers = new List<UnityEngine.Object>();
 			foreach (var model in models)
 			{
+				if (!model.gameObject.activeInHierarchy)
+					continue;
+
 				if (!model.generatedMeshes)
 					continue;
 
@@ -1205,6 +1214,15 @@ namespace InternalRealtimeCSG
 							SOModified = true;
 						}
 
+						var lightmapParametersProperty	= meshRendererComponentSO.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
+						var lightmapParameters			= owner.lightmapParameters;
+						if (lightmapParametersProperty != null &&
+							lightmapParametersProperty.objectReferenceValue != lightmapParameters)
+						{
+							lightmapParametersProperty.objectReferenceValue = lightmapParameters;
+							SOModified = true;
+						}
+
 						var autoUVMaxDistanceProperty		= meshRendererComponentSO.FindProperty("m_AutoUVMaxDistance");
 						var autoUVMaxDistance				= owner.autoUVMaxDistance;
 						if (autoUVMaxDistanceProperty != null &&
@@ -1335,7 +1353,7 @@ namespace InternalRealtimeCSG
 				}
 
 				var setToConvex = owner.SetColliderConvex;
-				if (meshColliderComponent.convex != setToConvex)
+				if (meshColliderComponent.convex != setToConvex && (setToConvex || !meshColliderComponent.isTrigger))
                 {
                     meshColliderComponent.convex = setToConvex;
 					instance.Dirty = true;
@@ -1353,7 +1371,7 @@ namespace InternalRealtimeCSG
 				if (instance.RenderSurfaceType == RenderSurfaceType.Trigger ||
 					owner.IsTrigger)
 				{
-					if (!meshColliderComponent.isTrigger)
+					if (!meshColliderComponent.isTrigger && meshColliderComponent.convex)
 					{
 						meshColliderComponent.isTrigger = true;
 						instance.Dirty = true;
@@ -1455,6 +1473,9 @@ namespace InternalRealtimeCSG
             for (var i = 0; i < models.Length; i++)
             {
                 var model = models[i];
+				if (!model.gameObject.activeInHierarchy)
+					continue;
+
                 if (!ModelTraits.IsModelEditable(model))
                     continue;
 
