@@ -137,6 +137,9 @@ namespace RealtimeCSG.Components
 		public float			autoUVMaxDistance		= 0.5f;
 		public float			autoUVMaxAngle			= 89.0f;
 		public int				minimumChartSize		= 4;
+		#if UNITY_EDITOR
+		public UnityEditor.LightmapParameters lightmapParameters;
+		#endif
 		#endregion
 
 		#endregion

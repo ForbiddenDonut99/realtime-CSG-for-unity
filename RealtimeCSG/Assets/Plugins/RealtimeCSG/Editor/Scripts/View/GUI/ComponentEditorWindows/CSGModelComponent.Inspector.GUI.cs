@@ -226,6 +226,7 @@ namespace RealtimeCSG
             float?	AutoUVMaxAngle			= models[0].autoUVMaxAngle;
 
             float?	ScaleInLightmap			= models[0].scaleInLightmap;
+			var		LightmapParams			= models[0].lightmapParameters;
             bool?	ShowGeneratedMeshes		= models[0].ShowGeneratedMeshes;
 //			ShadowCastingMode? ShadowCastingMode = (ShadowCastingMode)(settings & ModelSettingsFlags.ShadowCastingModeFlags);
             var	defaultPhysicsMaterial		= models[0].DefaultPhysicsMaterial;
@@ -279,6 +280,7 @@ namespace RealtimeCSG
                 float	currAutoUVMaxAngle			= models[i].autoUVMaxAngle;
                 bool	currShowGeneratedMeshes		= models[i].ShowGeneratedMeshes;
                 float	currScaleInLightmap			= models[i].scaleInLightmap;
+				var		currLightmapParams			= models[i].lightmapParameters;
                 var		currdefaultPhysicsMaterial	= models[i].DefaultPhysicsMaterial;
 //				ShadowCastingMode currShadowCastingMode = (ShadowCastingMode)(settings & ModelSettingsFlags.ShadowCastingModeFlags);
 
@@ -1062,7 +1064,35 @@ namespace RealtimeCSG
                                             updateMeshes = true;
                                         }
                                     }
-
+									{
+										var lightmapSettingsMethod = typeof(LightmapEditorSettings).GetMethod("GetLightmapSettings", BindingFlags.Static | BindingFlags.NonPublic);
+										var lightmapSettings = lightmapSettingsMethod.Invoke(null, null) as UnityEngine.Object;
+										SerializedObject so = new SerializedObject(lightmapSettings);
+										SerializedProperty lightmapParamsProp = so.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
+										UnityEngine.Object lightmapParams = null;
+										if (LightmapParams != null) 
+										{
+											lightmapParams = LightmapParams;
+										} else if (lightmapParamsProp != null) 
+										{
+											lightmapParams = lightmapParamsProp.objectReferenceValue;
+										}
+										EditorGUI.BeginChangeCheck();
+										{
+											lightmapParams = EditorGUILayout.ObjectField(LightmapParametersContent, lightmapParams, typeof(LightmapParameters), false);
+										}
+										if (EditorGUI.EndChangeCheck()) 
+										{
+											for (int i = 0; i < models.Length; i++) 
+											{
+												models[i].lightmapParameters = (LightmapParameters) lightmapParams;
+												MeshInstanceManager.Refresh(models[i], onlyFastRefreshes: false);
+											}
+											GUI.changed = true;
+											LightmapParams = (LightmapParameters) lightmapParams;
+											updateMeshes = true;
+										}
+									}
 #if UNITY_2017_2_OR_NEWER
                                     {
                                         var stitchLightmapSeams = StitchLightmapSeams ?? false;

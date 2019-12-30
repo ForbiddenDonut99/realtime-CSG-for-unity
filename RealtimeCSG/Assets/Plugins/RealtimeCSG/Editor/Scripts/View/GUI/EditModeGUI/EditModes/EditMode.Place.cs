@@ -1788,9 +1788,14 @@ namespace RealtimeCSG
 									 Event.current.modifiers == (EventModifiers.Shift | EventModifiers.Control))
 								{
 									toolEditMode = ToolEditMode.MovingObject;
-									if (hoverOnTarget > brushControlIDs.Length - 1)
-										hoverOnTarget = brushControlIDs.Length - 1;
-									newControlID = brushControlIDs[hoverOnTarget];
+									if (brushControlIDs.Length > 0)
+									{
+										hoverOnTarget = Mathf.Clamp(hoverOnTarget, 0, brushControlIDs.Length);
+										newControlID = brushControlIDs[hoverOnTarget];
+									} else
+									{
+										newControlID = 0;
+									}
 								}
 							} else
 							if (Tools.current != Tool.Move)
