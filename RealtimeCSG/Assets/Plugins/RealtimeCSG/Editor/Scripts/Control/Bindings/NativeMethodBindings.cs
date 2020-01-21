@@ -28,6 +28,16 @@ namespace RealtimeCSG
 			public Vector2      surfaceIntersection;
 
 			public float        distance;
+
+			public readonly static CSGSurfaceIntersection None = new CSGSurfaceIntersection() 
+			{
+				localPlane          = new Plane(Vector3.zero, 0),
+				modelPlane          = new Plane(Vector3.zero, 0),
+				worldPlane          = new Plane(Vector3.zero, 0),
+				worldIntersection   = Vector3.zero,
+				surfaceIntersection = Vector2.zero,
+				distance            = float.PositiveInfinity
+			};
 		};
 	
 		/// <summary>
@@ -42,6 +52,15 @@ namespace RealtimeCSG
 			public Int32        brushUserID;
 
 			public CSGSurfaceIntersection intersection;
+
+			public readonly static CSGTreeBrushIntersection None = new CSGTreeBrushIntersection()
+			{
+				tree			= (CSGTree)CSGTreeNode.InvalidNode,
+				brush			= (CSGTreeBrush)CSGTreeNode.InvalidNode,
+				brushUserID		= 0,
+				surfaceID	    = -1,
+				intersection    = CSGSurfaceIntersection.None
+			};
 		};
 
 		#region Functionality to allow C# methods to be called from C++

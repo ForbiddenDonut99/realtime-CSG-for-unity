@@ -117,11 +117,11 @@ namespace InternalRealtimeCSG
 
 		public static void Update()
 		{
-			var models = CSGModelManager.GetAllModel();
+			var models = CSGModelManager.GetAllModels();
 			for (var i = 0; i < models.Length; i++)
 			{
 				var model = models[i];
-				if (model && model.gameObject.activeInHierarchy)
+				if (ModelTraits.IsModelEditable(model))
 					MeshInstanceManager.ValidateModelDelayed(model);
 			}
 
@@ -482,7 +482,7 @@ namespace InternalRealtimeCSG
 			var renderers = new List<UnityEngine.Object>();
 			foreach (var model in models)
 			{
-				if (!model.gameObject.activeInHierarchy)
+				if (!model || !model.gameObject.activeInHierarchy)
 					continue;
 
 				if (!model.generatedMeshes)

@@ -27,6 +27,6 @@ namespace RealtimeCSG.Legacy
 		NoReceiveShadows	= 8,
 		
 		/// <summary>Surface is not part of the collision mesh.</summary>
-		NoCollision			= 16		// do not add surface to collider
+		NoCollision			= 16,		// do not add surface to collider
 	};
 }

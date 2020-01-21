@@ -305,6 +305,7 @@ namespace RealtimeCSG
 						}
 					}
 				}
+				hotControl = GUIUtility.hotControl;
 			}
 
 			if (hotControl != rectSelectionID)
@@ -312,33 +313,27 @@ namespace RealtimeCSG
 				prevStartGUIPoint = Vector2.zero;
 				prevMouseGUIPoint = Vector2.zero;
 				rectFoundGameObjects.Clear();
-			} else {
-				hotControl = 0;
-				GUIUtility.hotControl = 0;
 			}
 
 			bool click = false;
-			int controlID = GUIUtility.GetControlID(FocusType.Passive);
 
 			switch (typeForControl)
 			{
 				case EventType.MouseDown:
 				{
-					if (HandleUtility.nearestControl == controlID && (evt.button == 0))
-					{
-						GUIUtility.hotControl = controlID;
-						hasClicked = (evt.button == 0);
-						rectClickDown = (hasClicked && areRectSelecting);
-						clickMousePosition = evt.mousePosition;
-						mouseDragged = false;
-					}
+					hasClicked = (evt.button == 0);
+					rectClickDown = (hasClicked && areRectSelecting);
+					clickMousePosition = evt.mousePosition;
+					mouseDragged = false;
 					break;
 				}
 				case EventType.MouseUp:
 				{
-					if (GUIUtility.hotControl == controlID && (evt.button == 0))
+					if (!mouseDragged)
 					{
-						GUIUtility.hotControl = 0;
+						if ((HandleUtility.nearestControl != 0 || evt.button != 0) &&
+							(GUIUtility.keyboardControl != 0 || evt.button != 2))
+							break;
 						click = true;
 						evt.Use();
 					}
@@ -352,10 +347,7 @@ namespace RealtimeCSG
 				}
 				case EventType.MouseDrag:
 				{
-					if (GUIUtility.hotControl == controlID && evt.button == 0)
-					{
-						mouseDragged = true;	
-					}
+					mouseDragged = true;
 					break;
 				}
 				case EventType.Used:
@@ -373,6 +365,8 @@ namespace RealtimeCSG
 						rectClickDown = false;
 						break;
 					}
+					click = true;
+					evt.Use();
 					break;
 				}
 

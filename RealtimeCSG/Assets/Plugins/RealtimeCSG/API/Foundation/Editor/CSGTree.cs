@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 using Matrix4x4 = UnityEngine.Matrix4x4;
 
 namespace RealtimeCSG.Foundation
@@ -157,7 +158,6 @@ namespace RealtimeCSG.Foundation
 		/// <seealso cref="RealtimeCSG.Foundation.CSGTree.GetMeshDescriptions"/>
 		public GeneratedMeshContents		GetGeneratedMesh	(GeneratedMeshDescription meshDescription) { return GetGeneratedMesh(treeNodeID, meshDescription); }
 		
-
 		internal Int32 treeNodeID;
 	}
 }
