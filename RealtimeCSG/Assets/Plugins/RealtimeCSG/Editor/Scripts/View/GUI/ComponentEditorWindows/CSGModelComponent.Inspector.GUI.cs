@@ -226,8 +226,8 @@ namespace RealtimeCSG
             float?	AutoUVMaxAngle			= models[0].autoUVMaxAngle;
 
             float?	ScaleInLightmap			= models[0].scaleInLightmap;
-			var		LightmapParams			= models[0].lightmapParameters;
             bool?	ShowGeneratedMeshes		= models[0].ShowGeneratedMeshes;
+			var		LightmapParams			= models[0].lightmapParameters;
 //			ShadowCastingMode? ShadowCastingMode = (ShadowCastingMode)(settings & ModelSettingsFlags.ShadowCastingModeFlags);
             var	defaultPhysicsMaterial		= models[0].DefaultPhysicsMaterial;
             var	defaultPhysicsMaterialMixed = false;
@@ -1094,7 +1094,7 @@ namespace RealtimeCSG
 										}
 									}
 #if UNITY_2017_2_OR_NEWER
-                                    {
+									{
                                         var stitchLightmapSeams = StitchLightmapSeams ?? false;
                                         EditorGUI.BeginChangeCheck();
                                         {

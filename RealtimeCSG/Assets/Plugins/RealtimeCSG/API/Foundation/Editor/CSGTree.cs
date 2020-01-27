@@ -157,7 +157,7 @@ namespace RealtimeCSG.Foundation
 		/// <returns>A <see cref="RealtimeCSG.Foundation.GeneratedMeshContents"/> that can be used to initialize a [UnityEngine.Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) with.</returns>
 		/// <seealso cref="RealtimeCSG.Foundation.CSGTree.GetMeshDescriptions"/>
 		public GeneratedMeshContents		GetGeneratedMesh	(GeneratedMeshDescription meshDescription) { return GetGeneratedMesh(treeNodeID, meshDescription); }
-		
-		internal Int32 treeNodeID;
+
+        internal Int32 treeNodeID;
 	}
 }

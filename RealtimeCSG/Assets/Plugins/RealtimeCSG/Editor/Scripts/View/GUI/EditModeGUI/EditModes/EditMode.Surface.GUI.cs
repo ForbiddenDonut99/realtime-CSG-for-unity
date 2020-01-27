@@ -449,7 +449,7 @@ namespace RealtimeCSG
 		static SurfaceState surfaceState;
 		const int lightMapUVButtonOffset = 20;
 
-		const int lineHeight				= 18;
+		
 		const int boxOffset					= 4;
 		const int boxWidth					= 213;
 		
@@ -544,8 +544,7 @@ namespace RealtimeCSG
 			}
 			EditorGUI.BeginDisabledGroup(!surfaceState.enabled);
 			{
-				{ 
-					
+				{
 					// Lock texture box 
 					offset += boxOffset;
 					tempRect.Set(rect.x + 4, rect.y + offset,  boxWidth, textureLockedBoxHeight);//138
@@ -572,14 +571,16 @@ namespace RealtimeCSG
 					{
 						// Show
 						tempRect.Set(rect.x + 8, rect.y + offset + 3, boxWidth / 2, 16);
-						if (GUI.Button(tempRect, ContentShowSurface, leftStyle)) {
+						if (GUI.Button(tempRect, ContentShowSurface, leftStyle)) 
+						{
 							SurfaceUtility.SetSurfacesHideFlags(surfaceState.selectedBrushSurfaces, false);
 						}
 						TooltipUtility.SetToolTip(TooltipShowSurface, tempRect);
 
 						// Hide
 						tempRect.Set(rect.x + (boxWidth / 2) + 8, rect.y + offset + 3, (boxWidth / 2) - 8, 16);
-						if (GUI.Button(tempRect, ContentHideSurface, rightStyle)) {
+						if (GUI.Button(tempRect, ContentHideSurface, rightStyle)) 
+						{
 							SurfaceUtility.SetSurfacesHideFlags(surfaceState.selectedBrushSurfaces, true);
 						}
 						TooltipUtility.SetToolTip(TooltipHideSurface, tempRect);
@@ -600,7 +601,7 @@ namespace RealtimeCSG
 						}
 					}
 					offset += selectionBoxHeight;
-
+					
 					offset += boxOffset;
 					tempRect.Set(rect.x+4, rect.y + offset, boxWidth, transformationBoxHeight);//164
 					GUI.Box(tempRect, GUIContent.none, GUI.skin.box);
@@ -1112,7 +1113,6 @@ namespace RealtimeCSG
 
 			TooltipUtility.SetToolTip(CSG_GUIStyleUtility.PopOutTooltip, buttonArea);
 			int controlID = GUIUtility.GetControlID(SceneViewSurfaceOverlayHash, FocusType.Keyboard, boxArea);
-			var evt = Event.current;
 			switch (Event.current.GetTypeForControl(controlID))
 			{
 				case EventType.MouseDown:	{ if (boxArea.Contains(Event.current.mousePosition)) { GUIUtility.hotControl = controlID; GUIUtility.keyboardControl = controlID; Event.current.Use(); } break; }
@@ -1120,20 +1120,6 @@ namespace RealtimeCSG
 				case EventType.MouseUp:		{ if (GUIUtility.hotControl == controlID) { GUIUtility.hotControl = 0; GUIUtility.keyboardControl = 0; Event.current.Use(); } break; }
 				case EventType.MouseDrag:	{ if (GUIUtility.hotControl == controlID) { Event.current.Use(); } break; }
 				case EventType.ScrollWheel: { if (boxArea.Contains(Event.current.mousePosition)) { Event.current.Use(); } break; }
-
-				// Show and Hide toggle
-				case EventType.KeyUp:
-				{
-					switch (evt.keyCode)
-					{
-						case KeyCode.H:
-						{
-							SurfaceUtility.SetSurfacesHideFlags(surfaceState.selectedBrushSurfaces, !evt.alt);
-							break;
-						}
-					}
-					break;
-				}
 			}
 		}
 

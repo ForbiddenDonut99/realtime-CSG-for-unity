@@ -171,12 +171,12 @@ namespace RealtimeCSG
             }
         }
 
-		public static void SetSurfacesHideFlags(SelectedBrushSurface[] selectedBrushSurfaces, bool value)
+		public static void SetSurfacesHideFlags(SelectedBrushSurface[] selectedBrushSurfaces, bool value) 
 		{
 			SetSurfaceTexGenFlags(selectedBrushSurfaces, HideSurfaceMask, value);
 		}
-        
-        public static void SetTextureLock(SelectedBrushSurface[] selectedBrushSurfaces, bool value)
+
+		public static void SetTextureLock(SelectedBrushSurface[] selectedBrushSurfaces, bool value)
         {
             using (new UndoGroup(selectedBrushSurfaces, "setting texture lock"))
             { 

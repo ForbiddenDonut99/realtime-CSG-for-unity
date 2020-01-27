@@ -177,7 +177,6 @@ namespace RealtimeCSG
 			if (Keys.DoubleGridSizeKey			.IsKeyPressed()) { return true; }
 			if (Keys.ToggleShowGridKey			.IsKeyPressed()) { return true; }
 			if (Keys.ToggleSnappingKey			.IsKeyPressed()) { return true; }
-
 			return false;
 		}
 

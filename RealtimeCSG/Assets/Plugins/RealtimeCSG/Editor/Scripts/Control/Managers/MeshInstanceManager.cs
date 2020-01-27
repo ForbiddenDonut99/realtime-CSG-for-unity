@@ -121,7 +121,7 @@ namespace InternalRealtimeCSG
 			for (var i = 0; i < models.Length; i++)
 			{
 				var model = models[i];
-				if (ModelTraits.IsModelEditable(model))
+                if (ModelTraits.IsModelEditable(model))
 					MeshInstanceManager.ValidateModelDelayed(model);
 			}
 
@@ -149,9 +149,6 @@ namespace InternalRealtimeCSG
 			for (var i = 0; i < models.Length; i++)
 			{
 				var model = models[i];
-				if (!model.gameObject.activeInHierarchy)
-					continue;
-
                 if (!ModelTraits.IsModelEditable(model))
 					continue;
 
@@ -402,9 +399,6 @@ namespace InternalRealtimeCSG
 			for (var i = 0; i < models.Length; i++)
 			{
 				var model = models[i];
-				if (!model.gameObject.activeInHierarchy)
-					continue;
-
                 if (!ModelTraits.IsModelEditable(model))
 					continue;
 
@@ -481,11 +475,11 @@ namespace InternalRealtimeCSG
 		{
 			var renderers = new List<UnityEngine.Object>();
 			foreach (var model in models)
-			{
-				if (!model || !model.gameObject.activeInHierarchy)
-					continue;
+            {
+                if (!model || !model.gameObject.activeInHierarchy)
+                    continue;
 
-				if (!model.generatedMeshes)
+                if (!model.generatedMeshes)
 					continue;
 
 				foreach (var renderer in model.generatedMeshes.GetComponentsInChildren<MeshRenderer>())
@@ -931,19 +925,14 @@ namespace InternalRealtimeCSG
 			if (!container || !container.owner)
 				return;
 
-            AssetDatabase.StartAssetEditing(); // We might be modifying a prefab, in which case we need to store a mesh inside it
-            try
-            { 
-                foreach (var instance in container.MeshInstances)
-			    {
-				    if (!instance)
-					    continue;
+            foreach (var instance in container.MeshInstances)
+			{
+				if (!instance)
+					continue;
 
-				    Refresh(instance, model, onlyFastRefreshes: false, skipAssetDatabaseUpdate: true);
-				    ClearUVs(instance);
-                }
+				Refresh(instance, model, onlyFastRefreshes: false, skipAssetDatabaseUpdate: true);
+				ClearUVs(instance);
             }
-            finally { AssetDatabase.StopAssetEditing(); }
         }
 
 		public static void ClearUVs(GeneratedMeshInstance instance)
@@ -958,7 +947,7 @@ namespace InternalRealtimeCSG
 			instance.HasUV2 = false;
 		}
 
-		public static void Refresh(CSGModel model, bool postProcessScene = false, bool onlyFastRefreshes = true, bool skipAssetDatabaseUpdate = false)
+		public static void Refresh(CSGModel model, bool postProcessScene = false, bool onlyFastRefreshes = true)
         {
             if (!ModelTraits.IsModelEditable(model))
                 return;
@@ -967,22 +956,12 @@ namespace InternalRealtimeCSG
 			if (!generatedMeshes || generatedMeshes.owner != model)
 				return;
 
-            if (!skipAssetDatabaseUpdate)
-                AssetDatabase.StartAssetEditing(); // We might be modifying a prefab, in which case we need to store a mesh inside it
-            try
+            foreach (var instance in generatedMeshes.MeshInstances)
             {
-                foreach (var instance in generatedMeshes.MeshInstances)
-                {
-                    if (!instance)
-                        continue;
+                if (!instance)
+                    continue;
 
-                    Refresh(instance, model, postProcessScene, onlyFastRefreshes, skipAssetDatabaseUpdate: true);
-                }
-            }
-            finally
-            {
-                if (!skipAssetDatabaseUpdate)
-                    AssetDatabase.StopAssetEditing();
+                Refresh(instance, model, postProcessScene, onlyFastRefreshes, skipAssetDatabaseUpdate: true);
             }
         }
 
@@ -1214,11 +1193,10 @@ namespace InternalRealtimeCSG
 							SOModified = true;
 						}
 
-						var lightmapParametersProperty	= meshRendererComponentSO.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
-						var lightmapParameters			= owner.lightmapParameters;
+						var lightmapParametersProperty = meshRendererComponentSO.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
+						var lightmapParameters = owner.lightmapParameters;
 						if (lightmapParametersProperty != null &&
-							lightmapParametersProperty.objectReferenceValue != lightmapParameters)
-						{
+							lightmapParametersProperty.objectReferenceValue != lightmapParameters) {
 							lightmapParametersProperty.objectReferenceValue = lightmapParameters;
 							SOModified = true;
 						}
@@ -1353,7 +1331,7 @@ namespace InternalRealtimeCSG
 				}
 
 				var setToConvex = owner.SetColliderConvex;
-				if (meshColliderComponent.convex != setToConvex && (setToConvex || !meshColliderComponent.isTrigger))
+				if (meshColliderComponent.convex != setToConvex)
                 {
                     meshColliderComponent.convex = setToConvex;
 					instance.Dirty = true;
@@ -1371,7 +1349,7 @@ namespace InternalRealtimeCSG
 				if (instance.RenderSurfaceType == RenderSurfaceType.Trigger ||
 					owner.IsTrigger)
 				{
-					if (!meshColliderComponent.isTrigger && meshColliderComponent.convex)
+					if (!meshColliderComponent.isTrigger)
 					{
 						meshColliderComponent.isTrigger = true;
 						instance.Dirty = true;
@@ -1473,9 +1451,6 @@ namespace InternalRealtimeCSG
             for (var i = 0; i < models.Length; i++)
             {
                 var model = models[i];
-				if (!model.gameObject.activeInHierarchy)
-					continue;
-
                 if (!ModelTraits.IsModelEditable(model))
                     continue;
 
@@ -1738,6 +1713,16 @@ namespace InternalRealtimeCSG
             return null;
         }
 
+        public static HelperSurfaceDescription GetHelperSurfaceDescription(GeneratedMeshes container, ModelSettingsFlags modelSettings, GeneratedMeshDescription meshDescription, RenderSurfaceType renderSurfaceType)
+		{
+			var key = MeshInstanceKey.GenerateKey(meshDescription);
+			HelperSurfaceDescription instance = container.GetHelperSurface(key);
+			if (instance != null)
+				return instance;
+
+			return CreateHelperSurfaceDescription(container, modelSettings, meshDescription, renderSurfaceType);
+		}
+
 		public static bool IsObjectGenerated(UnityEngine.Object obj) 
 		{
 			if (!obj) 
@@ -1755,16 +1740,6 @@ namespace InternalRealtimeCSG
 				return false;
 
 			return parent.name == MeshContainerName;
-		}
-
-        public static HelperSurfaceDescription GetHelperSurfaceDescription(GeneratedMeshes container, ModelSettingsFlags modelSettings, GeneratedMeshDescription meshDescription, RenderSurfaceType renderSurfaceType)
-		{
-			var key = MeshInstanceKey.GenerateKey(meshDescription);
-			HelperSurfaceDescription instance = container.GetHelperSurface(key);
-			if (instance != null)
-				return instance;
-
-			return CreateHelperSurfaceDescription(container, modelSettings, meshDescription, renderSurfaceType);
 		}
 
 #region UpdateTransform
@@ -1974,19 +1949,21 @@ namespace InternalRealtimeCSG
 
 			//var isTrigger			= container.owner.IsTrigger;
 			//var collidable		= container.owner.HaveCollider || isTrigger;
-			var ownerStaticFlags	= GameObjectUtility.GetStaticEditorFlags(container.owner.gameObject);
+			var ownerGameObject     = container.owner.gameObject;
+            var ownerStaticFlags	= GameObjectUtility.GetStaticEditorFlags(ownerGameObject);
 			var previousStaticFlags	= GameObjectUtility.GetStaticEditorFlags(container.gameObject);
-			var containerTag		= container.owner.gameObject.tag;
-			var containerLayer		= container.owner.gameObject.layer;
+            
+			var containerLayer		= ownerGameObject.layer;
 			
 			var showVisibleSurfaces	= (RealtimeCSG.CSGSettings.VisibleHelperSurfaces & HelperSurfaceFlags.ShowVisibleSurfaces) != 0;
 
 
 			if (ownerStaticFlags != previousStaticFlags ||
-				containerTag   != container.gameObject.tag ||
+                !ownerGameObject.CompareTag(container.gameObject.tag) ||
 				containerLayer != container.gameObject.layer)
-			{
-				foreach (var meshInstance in container.MeshInstances)
+            {
+                var containerTag = ownerGameObject.tag;
+                foreach (var meshInstance in container.MeshInstances)
 				{
 					if (!meshInstance)
 						continue;
@@ -2002,7 +1979,7 @@ namespace InternalRealtimeCSG
 						var gameObject = transform.gameObject;
 						if (oldStaticFlags != newStaticFlags)
 							GameObjectUtility.SetStaticEditorFlags(gameObject, newStaticFlags);
-						if (gameObject.tag != containerTag)
+						if (!gameObject.CompareTag(containerTag))
 							gameObject.tag = containerTag;
 						if (gameObject.layer != containerLayer)
 							gameObject.layer = containerLayer;

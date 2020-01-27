@@ -82,10 +82,10 @@ namespace InternalRealtimeCSG
 
 		public class SurfaceFlagState
 		{
-			public bool? noRender			= false;
-			public bool? noCollision		= false;
-			public bool? noCastShadows		= false;
-			public bool? noReceiveShadows	= false;
+			public bool? noRender          = false;
+			public bool? noCollision       = false;
+			public bool? noCastShadows     = false;
+			public bool? noReceiveShadows  = false;
 
 			public void Init(SelectedBrushSurface[] selectedBrushSurfaces)
 			{
